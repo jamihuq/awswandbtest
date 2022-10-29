@@ -9,17 +9,26 @@ provider "aws" {
   region = var.aws_region
 }
 
-#resource "aws_route53_zone" "ziah_dev" {
-#  name = "ziah.dev"
-#}
+resource "aws_route53_zone" "ziah_dev" {
+  name = "ziah.dev"
+}
 
-#output "name_servers" {
-#  value = aws_route53_zone.ziah_dev.name_servers
-#}
+output "name_servers" {
+  value = aws_route53_zone.ziah_dev.name_servers
+}
 
 ################
 # DNS records
 ################
+
+resource "aws_route53_record" "wandb" {
+  zone_id = aws_route53_zone.ziah_dev.zone_id
+  name    = "wandb.ziah.dev"
+  type    = "CNAME"
+  ttl     = "60"
+  records = ["${aws_lb.wandb.dns_name}"]
+}
+
 ############################
 # DNS validation with route 53
 ################################
@@ -43,17 +52,6 @@ data "aws_route53_zone" "ziah_dev" {
 ###########################################################
 # End 
 ###########################################################
-output "name_servers" {
-  value = aws_route53_zone.ziah_dev.name_servers
-}
-
-resource "aws_route53_record" "wandb" {
-  zone_id = aws_route53_zone.ziah_dev.zone_id
-  name    = "wandb.ziah.dev"
-  type    = "CNAME"
-  ttl     = "60"
-  records = ["${aws_lb.wandb.dns_name}"]
-}
 
 resource "aws_route53_record" "ziah_dev" {
   for_each = {
@@ -69,7 +67,7 @@ resource "aws_route53_record" "ziah_dev" {
   records         = [each.value.record]
   ttl             = 60
   type            = each.value.type
-  zone_id         = data.aws_route53_zone.ziah_dev.zone_id
+  zone_id         = aws_route53_zone.ziah_dev.zone_id
 }
 
 resource "aws_acm_certificate_validation" "ziah_dev" {
