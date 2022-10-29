@@ -39,20 +39,18 @@ resource "aws_route53_record" "wandb" {
 # Begin
 ###########################################################
 resource "aws_acm_certificate" "ziah_dev" {
-  domain_name       = "ziah_dev.com"
-  validation_method = "DNS"
-
-  tags = {
-    Environment = "test"
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
+  domain_name               = "ziah_dev.com"
+  subject_alternative_names = ["www.ziah_dev.com", "ziah_dev.org"]
+  validation_method         = "DNS"
 }
 
-data "aws_route53_zone" "ziah_dev" {
+data "aws_route53_zone" "ziah_dev_com" {
   name         = "ziah_dev.com"
+  private_zone = false
+}
+
+data "aws_route53_zone" "ziah_dev_org" {
+  name         = "ziah_dev.org"
   private_zone = false
 }
 ###########################################################
