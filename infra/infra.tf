@@ -2,79 +2,11 @@ terraform {
   required_providers {
     aws = "~> 3.37.0"
   }
-  backend "local" {}
 }
 
 provider "aws" {
   region = var.aws_region
 }
-
-resource "aws_route53_zone" "ziah_dev" {
-  name = "ziah.dev"
-}
-
-output "name_servers" {
-  value = aws_route53_zone.ziah_dev.name_servers
-}
-
-################
-# DNS records
-################
-
-resource "aws_route53_record" "wandb" {
-  zone_id = aws_route53_zone.ziah_dev.zone_id
-  name    = "wandb.ziah.dev"
-  type    = "CNAME"
-  ttl     = "60"
-  records = ["${aws_lb.wandb.dns_name}"]
-}
-
-############################
-# DNS validation with route 53
-################################
-
-
-###########################################################
-# Create Certificate
-# this code is from https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/acm_certificate
-# Begin
-###########################################################
-resource "aws_acm_certificate" "ziah_dev" {
-  domain_name               = "ziah_dev.com"
-  validation_method         = "DNS"
-}
-
-#data "aws_route53_zone" "ziah_dev" {
-#  name         = "ziah_dev.com"
-#  private_zone = false
-#}
-
-###########################################################
-# End 
-###########################################################
-
-resource "aws_route53_record" "ziah_dev" {
-  for_each = {
-   for dvo in aws_acm_certificate.ziah_dev.domain_validation_options : dvo.domain_name => {
-      name    = dvo.resource_record_name
-      record  = dvo.resource_record_value
-      type    = dvo.resource_record_type
-   }
-  }
-
-  allow_overwrite = true
-  name            = each.value.name
-  records         = [each.value.record]
-  ttl             = 60
-  type            = each.value.type
-  zone_id         = aws_route53_zone.ziah_dev.zone_id
-}
-
-resource "aws_acm_certificate_validation" "ziah_dev" {
-  certificate_arn   = aws_acm_certificate.ziah_dev.arn
-  validation_record_fqdns = [for record in aws_route53_record.ziah_dev : record.fqdn]
-}
-
 
 ##########################################
 # Variables
@@ -105,7 +37,7 @@ variable "deployment_is_private" {
 variable "kubernetes_version" {
   description = "Kubernetes version to use with aws_eks_cluster and node group."
   type        = string
-  default     = "1.23"
+  default     = "1.18"
 }
 
 variable "kubernetes_api_is_private" {
@@ -520,49 +452,16 @@ resource "aws_lb_target_group" "wandb_tg" {
   }
 }
 
-#resource "aws_lb_listener" "wandb_listener" {
-#  load_balancer_arn = aws_lb.wandb.arn
-#  port              = "80"
-#  protocol          = "HTTP"
-#
-#  default_action {
-#    type             = "forward"
-#    target_group_arn = aws_lb_target_group.wandb_tg.arn
-#  }
-#}
-
-# HTTP redirect listener 
 resource "aws_lb_listener" "wandb_listener" {
   load_balancer_arn = aws_lb.wandb.arn
-  port              = 80
+  port              = "80"
   protocol          = "HTTP"
 
   default_action {
-    type = "redirect"
-
-    redirect {
-      port        = "443"
-      protocol    = "HTTPS"
-      status_code = "HTTP_301"
-    }
-  }
-}
-
-# ALB default HTTPS backend
-resource "aws_lb_listener" "wandb_https_listener" {
-  load_balancer_arn   = aws_lb.wandb.arn
-  port                = 443
-  protocol            = "HTTPS"
-  ssl_policy          = "ELBSecurityPolicy-2016-08"
-  certificate_arn     = aws_acm_certificate_validation.ziah_dev.certificate_arn
-
-  default_action {
-    type      = "forward"
+    type             = "forward"
     target_group_arn = aws_lb_target_group.wandb_tg.arn
   }
 }
-
-
 
 resource "aws_autoscaling_attachment" "wandb" {
   autoscaling_group_name = aws_eks_node_group.eks_worker_node_group.resources[0].autoscaling_groups[0].name
