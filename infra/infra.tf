@@ -38,7 +38,7 @@ variable "deployment_is_private" {
 variable "kubernetes_version" {
   description = "Kubernetes version to use with aws_eks_cluster and node group."
   type        = string
-  default     = "1.18"
+  default     = "1.23"
 }
 
 variable "kubernetes_api_is_private" {
