@@ -13,9 +13,9 @@ provider "aws" {
 #  name = "ziah.dev"
 #}
 
-output "name_servers" {
-  value = aws_route53_zone.ziah_dev.name_servers
-}
+#output "name_servers" {
+#  value = aws_route53_zone.ziah_dev.name_servers
+#}
 
 ################
 # DNS records
@@ -43,6 +43,9 @@ data "aws_route53_zone" "ziah_dev" {
 ###########################################################
 # End 
 ###########################################################
+output "name_servers" {
+  value = aws_route53_zone.ziah_dev.name_servers
+}
 
 resource "aws_route53_record" "wandb" {
   zone_id = aws_route53_zone.ziah_dev.zone_id
