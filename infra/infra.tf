@@ -20,6 +20,10 @@ output "name_servers" {
 ################
 # DNS records
 ################
+############################
+# DNS validation with route 53
+# this code is from https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/acm_certificate_validation
+################################
 
 resource "aws_route53_record" "wandb" {
   zone_id = aws_route53_zone.ziah_dev.zone_id
@@ -29,13 +33,12 @@ resource "aws_route53_record" "wandb" {
   records = ["${aws_lb.wandb.dns_name}"]
 }
 
-# this code is from https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/acm_certificate_validation
 resource "aws_acm_certificate" "ziah_dev" {
   domain_name       = "ziah_dev.com"
   validation_method = "DNS"
 }
 
-resource "aws_route53_zone" "ziah_dev" {
+data "aws_route53_zone" "ziah_dev" {
   name         = "ziah_dev.com"
   private_zone = false
 }
@@ -55,7 +58,7 @@ resource "aws_route53_record" "ziah_dev" {
   records         = [each.value.record]
   ttl             = 60
   type            = each.value.type
-  zone_id         = aws_route53_zone.ziah_dev.zone_id
+  zone_id         = data.aws_route53_zone.ziah_dev.zone_id
 }
 
 resource "aws_acm_certificate_validation" "ziah_dev" {
