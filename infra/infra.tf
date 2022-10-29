@@ -9,6 +9,14 @@ provider "aws" {
   region = var.aws_region
 }
 
+resource "aws_route53_zone" "ziah_dev" {
+  name = "ziah.dev"
+}
+
+output "name_servers" {
+  value = aws_route53_zone.ziah_dev.name_servers
+}
+
 ##########################################
 # Variables
 ##########################################

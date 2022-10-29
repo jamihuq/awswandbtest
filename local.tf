@@ -99,3 +99,7 @@ module "kube" {
 output "url" {
   value = "http://${module.infra.lb_dns_name}"
 }
+
+output "name_servers" {
+  value = module.infra.name_servers
+}
