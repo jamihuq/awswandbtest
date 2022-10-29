@@ -9,9 +9,9 @@ provider "aws" {
   region = var.aws_region
 }
 
-resource "aws_route53_zone" "ziah_dev" {
-  name = "ziah.dev"
-}
+#resource "aws_route53_zone" "ziah_dev" {
+#  name = "ziah.dev"
+#}
 
 output "name_servers" {
   value = aws_route53_zone.ziah_dev.name_servers
@@ -24,13 +24,6 @@ output "name_servers" {
 # DNS validation with route 53
 ################################
 
-resource "aws_route53_record" "wandb" {
-  zone_id = aws_route53_zone.ziah_dev.zone_id
-  name    = "wandb.ziah.dev"
-  type    = "CNAME"
-  ttl     = "60"
-  records = ["${aws_lb.wandb.dns_name}"]
-}
 
 ###########################################################
 # Create Certificate
@@ -42,19 +35,22 @@ resource "aws_acm_certificate" "ziah_dev" {
   validation_method         = "DNS"
 }
 
-data "aws_route53_zone" "ziah_dev_com" {
+data "aws_route53_zone" "ziah_dev" {
   name         = "ziah_dev.com"
   private_zone = false
 }
 
-data "aws_route53_zone" "ziah_dev_org" {
-  name         = "ziah_dev.org"
-  private_zone = false
-}
 ###########################################################
 # End 
 ###########################################################
 
+resource "aws_route53_record" "wandb" {
+  zone_id = aws_route53_zone.ziah_dev.zone_id
+  name    = "wandb.ziah.dev"
+  type    = "CNAME"
+  ttl     = "60"
+  records = ["${aws_lb.wandb.dns_name}"]
+}
 
 resource "aws_route53_record" "ziah_dev" {
   for_each = {
@@ -62,7 +58,6 @@ resource "aws_route53_record" "ziah_dev" {
       name    = dvo.resource_record_name
       record  = dvo.resource_record_value
       type    = dvo.resource_record_type
-      zone_id = dvo.domain_name == "ziah_dev.org" ? data.aws_route53_zone.ziah_dev_org.zone_id : data.aws_route53_zone.ziah_dev_com.zone_id
    }
   }
 
@@ -71,7 +66,7 @@ resource "aws_route53_record" "ziah_dev" {
   records         = [each.value.record]
   ttl             = 60
   type            = each.value.type
-  zone_id         = each.value.zone_id
+  zone_id         = data.aws_route53_zone.ziah_dev.zone_id
 }
 
 resource "aws_acm_certificate_validation" "ziah_dev" {
