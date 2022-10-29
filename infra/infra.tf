@@ -44,10 +44,10 @@ resource "aws_acm_certificate" "ziah_dev" {
   validation_method         = "DNS"
 }
 
-data "aws_route53_zone" "ziah_dev" {
-  name         = "ziah_dev.com"
-  private_zone = false
-}
+#data "aws_route53_zone" "ziah_dev" {
+#  name         = "ziah_dev.com"
+#  private_zone = false
+#}
 
 ###########################################################
 # End 
